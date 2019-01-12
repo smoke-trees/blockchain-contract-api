@@ -33,7 +33,7 @@ beforeEach(async () => {
         .send({ from: accounts[0], gas: '1000000'});
 });
 
-describe('Inbox', () => {
+describe('Energy Credits', () => {
     it('deploys a contract', () => {
         assert.ok(credits.options.address);
     });
