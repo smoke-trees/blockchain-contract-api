@@ -57,8 +57,7 @@ app.post('/api/purchaseCredits', async (req, res) => {
 
 //set new credit price
 
-const PORT = 5000;
 
-app.listen(PORT, () => {
-    console.log('Listening on port', PORT);
+app.listen(process.env.PORT || 5000, () => {
+    console.log('Listening on port', process.env.PORT || 5000);
 });
