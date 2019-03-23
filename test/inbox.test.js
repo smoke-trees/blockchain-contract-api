@@ -4,53 +4,58 @@ const ganache = require('ganache-cli');
 const Web3 = require('web3');
 const provider = ganache.provider();
 const web3 = new Web3(provider);
-const Express = require('express');
-const app = Express();
 const { interface: interfaceContract, bytecode } = require('../compile.js');
 
 
 let accounts;
-let credits;
-const INITIAL_PRICE = "10000";
-const SETPRICE_VALUE = "1000";
-
-app.get('/api/currentCreditPrice', async (req, res) => {
-    res.status(200).send(await credits.methods.CURRENT_CREDIT_PRICE().call());
-});
-
-const PORT = 5000;
-
-app.listen(PORT, () => {
-    console.log('Listening on port', PORT);
-});
+let eventData;
 
 beforeEach(async () => {
     // Fetch all the accounts
     accounts = await web3.eth.getAccounts();
     // Use one of them to deploy a contract
-    credits = await new web3.eth.Contract(JSON.parse(interfaceContract))
-        .deploy({ data: bytecode, arguments:[INITIAL_PRICE]})
-        .send({ from: accounts[0], gas: '1000000'});
+    eventData = await new web3.eth.Contract(JSON.parse(interfaceContract))
+        .deploy({ data: bytecode, arguments:[] })
+        .send({ from: accounts[0], gas: '3000000'});
+    console.log(await web3.eth.getBalance(accounts[0]))
 });
 
-describe('Energy Credits', () => {
+describe('Election', () => {
     it('deploys a contract', () => {
-        assert.ok(credits.options.address);
+        assert.ok(eventData.options.address);
     });
 
-    it('has a default credit price', async () => {
-        const price = await credits.methods.CURRENT_CREDIT_PRICE().call();
-        assert.strictEqual(String(price), INITIAL_PRICE);
+    it('should add device data',async () => {
+        const deviceId = 432;
+        const accessHash = 'df6gs90dg7hd56sd5fd87vm9000f5haj9';
+        await eventData.methods.addDeviceData(deviceId, accessHash).send({from:accounts[0]});
+        //console.log(await eventData.methods.getDeviceTimestamps(deviceId).call());
     });
 
-
-    it('can change price property', async () => {
-        await credits.methods.setCreditPrice(SETPRICE_VALUE).send({from: accounts[0]});
-        const price = await credits.methods.CURRENT_CREDIT_PRICE().call();
-        assert.strictEqual(price, SETPRICE_VALUE);
+    it('should add default candidates in the constructor', async () => {
+        const sendId = 2;
+        const candidate = await eventData.methods.candidates(sendId).call();
+        assert.strictEqual(sendId.toString(), candidate.id);
     });
 
-    it('should ', () => {
+    it('should be able to vote', async () => {
+        await eventData.methods.vote(2).send({from: accounts[0]});
+        const candidate = await eventData.methods.candidates(2).call();
+        assert.strictEqual(candidate.voteCount, '1');
+    });
+
+    it('should not be able to vote twice', async () => {
+        await eventData.methods.vote(1).send({from: accounts[0]});
+        try {
+            await eventData.methods.vote(1).send({from: accounts[0]});
+        } catch (e) {
+            if (e.toString().includes('revert')) {
+                assert(true);
+            } else {
+                assert(false);
+            }
+        }
 
     });
+
 });

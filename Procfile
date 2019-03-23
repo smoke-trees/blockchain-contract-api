@@ -1,1 +1,1 @@
-web: node dscvit.js
+web: node start.js
